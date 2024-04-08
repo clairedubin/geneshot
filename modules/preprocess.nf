@@ -1,7 +1,7 @@
 nextflow.enable.dsl=2
 
 // Container versions
-container__barcodecop = "quay.io/fhcrc-microbiome/barcodecop:barcodecop_0.5.3"
+container__barcodecop = "golob/barcodecop:0.5.1"
 container__trimgalore = 'quay.io/biocontainers/trim-galore:0.6.6--0'
 container__bwa = "quay.io/fhcrc-microbiome/bwa:bwa.0.7.17__bcw.0.3.0I"
 container__fastatools = "quay.io/fhcrc-microbiome/fastatools:0.7.1__bcw.0.3.2"
@@ -62,13 +62,12 @@ workflow Preprocess_wf {
     Barcodecop(to_bcc_ch)
 
     // Raise an error if any of the samples fail barcodecop
-    Barcodecop.out.bcc_empty_ch.filter {
+    Barcodecop.out.filter {
         r -> (file(r[1]).isEmpty() || file(r[2]).isEmpty())
     }.map { r -> assert false: "Specimen failed barcodecop ${r.specimen}"}
 
     // Send the files which pass barcodecop to trim
-    bcc_to_trim_ch = Barcodecop.out.bcc_to_cutadapt_ch
-        .filter { 
+    bcc_to_trim_ch = Barcodecop.out.filter { 
                 r -> (!file(r[1]).isEmpty() && !file(r[2]).isEmpty())
         }
 
@@ -87,15 +86,15 @@ workflow Preprocess_wf {
     TrimGalore(demupltiplexed_ch)
 
     // Download the human index if needed
-    if (!params.hg_index) {
-        Download_hg_index()
-        hg_index_tgz = Download_hg_index.out
+    if (!params.host_index) {
+        Download_host_index()
+        host_index_tgz = Download_host_index.out
     } else {
-        hg_index_tgz = file(params.hg_index)
+        host_index_tgz = file(params.host_index)
     }
 
     // Remove the human reads
-    BWA_remove_human(hg_index_tgz, TrimGalore.out)
+    BWA_remove_human(host_index_tgz, TrimGalore.out)
 
     // Combine the reads by specimen name
     CombineReads(BWA_remove_human.out.groupTuple())
@@ -121,14 +120,14 @@ process Barcodecop {
     tag "Validate barcode demultiplexing for WGS reads"
     container "${container__barcodecop}"
     label 'multithread'
-    errorStrategy 'finish'
+    errorStrategy 'ignore'
 
     input:
-        tuple val(specimen), file(R1), file(R2), file(I1), file(I2)
+        tuple val(specimen), path(R1), path(R2), path(I1), path(I2)
 
     output:
-        tuple val(specimen), file("${R1}.bcc.fq.gz"), file("${R2}.bcc.fq.gz"), emit: bcc_to_cutadapt_ch
-        tuple val(specimen), file("${R1}.bcc.fq.gz"), file("${R2}.bcc.fq.gz"), emit: bcc_empty_ch
+        tuple val(specimen), path("${R1}.bcc.fq.gz"), path("${R2}.bcc.fq.gz")
+
 """
 set -e
 
@@ -137,24 +136,17 @@ barcodecop \
 ${I1} ${I2} \
 --match-filter \
 -f ${R1} \
--o OUTPUT_R1.fq.gz
-echo "Done"
+-o ${R1}.bcc.fq.gz
 
-echo "Renaming output file to ${R1}.bcc.fq.gz"
-mv OUTPUT_R1.fq.gz ${R1}.bcc.fq.gz
-echo "Done"
 
 echo "Running barcodecop on ${R2}"
 barcodecop \
 ${I1} ${I2} \
 --match-filter \
 -f ${R2} \
--o OUTPUT_R2.fq.gz
+-o "${R2}.bcc.fq.gz"
 echo "Done"
 
-echo "Renaming output file to ${R2}.bcc.fq.gz"
-mv OUTPUT_R2.fq.gz ${R2}.bcc.fq.gz
-echo "Done"
 """
 }
 
@@ -186,19 +178,19 @@ process TrimGalore {
 }
 
 // Process to download the human genome BWA index, already tarballed
-process Download_hg_index {
+process Download_host_index {
     tag "Download human reference genome"
     container "${container__bwa}"
     errorStrategy "finish"
     label 'io_net'
 
     output:
-    file 'hg_index.tar.gz'
+    file 'host_index.tar.gz'
     
 """
 set -e
 
-wget --quiet ${params.hg_index_url} -O hg_index.tar.gz
+wget --quiet ${params.host_index_url} -O host_index.tar.gz
 """
 }
 
@@ -207,12 +199,12 @@ wget --quiet ${params.hg_index_url} -O hg_index.tar.gz
 process BWA_remove_human {
     tag "Remove human reads"
     container "${container__bwa}"
-    errorStrategy 'finish'
+    errorStrategy 'ignore'
     label 'multithread'
 
 
     input:
-        file hg_index_tgz
+        file host_index_tgz
         tuple val(sample_name), file(R1), file(R2)
 
     output:
@@ -223,19 +215,19 @@ process BWA_remove_human {
 set - e
 
 
-bwa_index_fn=\$(tar -ztvf ${hg_index_tgz} | head -1 | sed \'s/.* //\')
+bwa_index_fn=\$(tar -ztvf ${host_index_tgz} | head -1 | sed \'s/.* //\')
 bwa_index_prefix=\${bwa_index_fn%.*}
 echo BWA index prefix is \${bwa_index_prefix} | tee -a ${R1.getSimpleName()}.nohuman.log
 echo Extracting BWA index | tee -a ${R1.getSimpleName()}.nohuman.log
-mkdir -p hg_index/ 
-tar -I pigz -xf ${hg_index_tgz} -C hg_index/ | tee -a ${R1.getSimpleName()}.nohuman.log
+mkdir -p host_index/ 
+tar -I pigz -xf ${host_index_tgz} -C host_index/ | tee -a ${R1.getSimpleName()}.nohuman.log
 echo Files in index directory: | tee -a ${R1.getSimpleName()}.nohuman.log
-ls -l -h hg_index | tee -a ${R1.getSimpleName()}.nohuman.log
+ls -l -h host_index | tee -a ${R1.getSimpleName()}.nohuman.log
 echo Running BWA | tee -a ${R1.getSimpleName()}.nohuman.log
 bwa mem -t ${task.cpus} \
--T ${params.min_hg_align_score} \
+-T ${params.min_host_align_score} \
 -o alignment.sam \
-hg_index/\$bwa_index_prefix \
+host_index/\$bwa_index_prefix \
 ${R1} ${R2} \
 | tee -a ${R1.getSimpleName()}.nohuman.log
 echo Checking if alignment is empty  | tee -a ${R1.getSimpleName()}.nohuman.log
@@ -247,7 +239,7 @@ samtools fastq alignment.sam \
 | tee -a ${R1.getSimpleName()}.nohuman.log
 echo Done | tee -a ${R1.getSimpleName()}.nohuman.log
 
-rm -rf hg_index/*
+rm -rf host_index/*
 echo Cleanup Done
 """
 }
@@ -289,7 +281,7 @@ combine_fastq_pairs.py \
 process OutputManifest {
     container "${container__ubuntu}"
 
-    publishDir path: "${params.output}qc/", enabled: params.savereads, mode: "copy"
+    publishDir path: "${params.output_folder}qc/", enabled: params.savereads, mode: "copy"
 
     input:
         path R1s
@@ -365,15 +357,15 @@ workflow CombineReads {
 // If these are not set by the user, then they will be set to the values below
 // This is useful for the if/then control syntax below
 params.nopreprocess = false
-params.savereads = false
+params.savereads = true
 params.help = false
 params.output = './results/'
 params.manifest = false
 
 // Preprocessing options
-params.hg_index_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna.bwa_index.tar.gz'
-params.hg_index = false
-params.min_hg_align_score = 30
+params.host_index_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna.bwa_index.tar.gz'
+params.host_index = false
+params.min_host_align_score = 30
 
 // imports
 include { Read_manifest } from './general'
@@ -391,13 +383,12 @@ def helpMessage() {
 
     Options:
       --output              Folder to place analysis outputs (default ./results/)
-      --savereads           If specified, save the preprocessed reads to the output folder (inside qc/)
       -w                    Working directory. Defaults to `./work`
 
     For preprocessing:
-      --hg_index_url        URL for human genome index, defaults to current HG
-      --hg_index            Cached copy of the bwa indexed human genome, TGZ format
-      --min_hg_align_score  Minimum alignment score for human genome (default 30)
+      --host_index_url          URL for host genome index, defaults to Human genome GRCh38
+      --host_index              Cached copy of the bwa indexed host genome, TGZ format
+      --min_host_align_score      Minimum alignment score for host genome (default 30)
 
     Manifest:
       The manifest is a CSV with a header indicating which samples correspond to which files.
@@ -409,6 +400,12 @@ def helpMessage() {
     """.stripIndent()
 }
 
+// Make sure that --output ends with trailing "/" characters
+if (!params.output.endsWith("/")){
+    params.output_folder = params.output.concat("/")
+} else {
+    params.output_folder = params.output
+}
 
 workflow {
     main:
@@ -424,11 +421,12 @@ workflow {
     // Read and validate manifest
     manifest_file = Channel.from(file(params.manifest))
     manifest_qced = Read_manifest(manifest_file)
+    
     // Actually preprocess
 
     Preprocess_wf(
         manifest_qced.valid_paired_indexed,
-        manifest_qced.valid_paired
+        manifest_qced.valid_paired,
     )
 
 }
