@@ -6,6 +6,7 @@ nextflow.enable.dsl=2
 container__FAMLI = 'golob/famli2:2.0.0.pre'
 container__anndata = 'golob/python-anndata:0.9.2'
 container__diamond = 'quay.io/biocontainers/diamond:2.1.8--h43eeafb_0'
+container__vsearch = 'quay.io/biocontainers/vsearch:2.22.1--hf1761c0_0'
 
 // Processes used for alignment of reads against gene databases
 
@@ -28,10 +29,16 @@ workflow Alignment_wf {
 
     main:
 
+    MergeFastqToFasta(
+        reads_ch
+    )
+
+    MergeFastqToFasta.out.view()
+
     // Align all specimens against the DIAMOND database
     Diamond(
-        reads_ch,
-        allele_dmnd
+        MergeFastqToFasta.out,
+        allele_dmnd,
     )
 
 
@@ -51,8 +58,6 @@ workflow Alignment_wf {
     // */
 }
 
-
-// Align each sample against the reference database of genes using DIAMOND
 process DiamondDB {
     tag "Make a DIAMOND database"
     container "${container__diamond}"
@@ -77,16 +82,41 @@ process DiamondDB {
 
 }
 
+// Merge read pairs and convert to fasta:
+process MergeFastqToFasta {
+    tag "Merge fastq files into fasta for alignment"
+    container "${container__vsearch}"
+    label 'io_limited'
+    errorStrategy 'ignore'
+
+    input:
+        tuple val(sample_name), file(R1), file(R2)
+
+    output:
+        tuple val(sample_name), file("${sample_name}.fasta.gz")
+    
+    """
+    set -e
+    vsearch \
+        --fastq_mergepairs ${R1} \
+        --reverse ${R2} \
+        --fastaout ${sample_name}.fasta
+
+    gzip ${sample_name}.fasta
+    ls -lh ${sample_name}.fasta.gz
+    """
+
+}
 
 // Align each sample against the reference database of genes using DIAMOND
 process Diamond {
     tag "Align to the gene catalog"
     container "${container__diamond}"
     label 'mem_veryhigh'
-    errorStrategy 'finish'
+    errorStrategy 'ignore'
     
     input:
-    tuple val(sample_name), file(R1), file(R2)
+    tuple val(sample_name), file(R_fasta)
     file refdb
     
     output:
@@ -95,31 +125,23 @@ process Diamond {
     """
     set -e
 
-    for fp in ${R1} ${R2}; do
-        cat \$fp | \
-        gunzip -c | \
-        awk "{if(NR % 4 == 1){print \\"@\$fp\\" NR }else{if(NR % 4 == 3){print \\"+\\"}else{print}}}" | \
-        gzip -c \
-        > query.fastq.gz
+    diamond \
+    blastx \
+    --query ${R_fasta} \
+    --out ${sample_name}.aln.gz \
+    --threads ${task.cpus} \
+    --db ${refdb} \
+    --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen \
+    --min-score ${params.dmnd_min_score} \
+    --query-cover ${params.dmnd_min_coverage} \
+    --id ${params.dmnd_min_identity} \
+    --top ${params.dmnd_top_pct} \
+    --block-size ${task.memory.toMega() / (1024 * 6 )} \
+    --query-gencode ${params.gencode} \
+    --compress 1 \
+    --unal 0
 
-        diamond \
-        blastx \
-        --query query.fastq.gz \
-        --out \$fp.aln.gz \
-        --threads ${task.cpus} \
-        --db ${refdb} \
-        --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen \
-        --min-score ${params.dmnd_min_score} \
-        --query-cover ${params.dmnd_min_coverage} \
-        --id ${params.dmnd_min_identity} \
-        --top ${params.dmnd_top_pct} \
-        --block-size ${task.memory.toMega() / (1024 * 6 )} \
-        --query-gencode ${params.gencode} \
-        --compress 1 \
-        --unal 0
-    done
 
-    cat *aln.gz > ${sample_name}.aln.gz
     """
 
 }
