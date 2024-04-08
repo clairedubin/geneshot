@@ -11,8 +11,8 @@ container__diamond = 'quay.io/biocontainers/diamond:2.1.8--h43eeafb_0'
 
 
 // Alignment options
-params.dmnd_min_identity = 80 // DIAMOND
-params.dmnd_min_coverage = 50 // DIAMOND
+params.dmnd_min_identity = 90 // DIAMOND
+params.dmnd_min_coverage = 80 // DIAMOND
 params.dmnd_top_pct = 1 // DIAMOND
 params.dmnd_min_score = 20 // DIAMOND
 params.gencode = 11 //DIAMOND
