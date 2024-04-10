@@ -24,60 +24,6 @@ def Read_manifest(manifest_file){
 
 
 
-// Count the number of input reads for a single sample
-process countReads {
-    tag "Count the number of reads per sample"
-    container "${container__fastatools}"
-    cpus 1
-    memory "4 GB"
-    errorStrategy "finish"
-
-    input:
-    tuple val(sample_name), file(R1), file(R2)
-
-    output:
-    file "${sample_name}.countReads.csv"
-
-"""
-set -e
-
-[[ -s ${R1} ]]
-[[ -s ${R2} ]]
-
-n=\$(cat <(gunzip -c "${R1}") <(gunzip -c "${R2}") | awk 'NR % 4 == 1' | wc -l)
-echo "${sample_name},\$n" > "${sample_name}.countReads.csv"
-"""
-}
-
-
-// Make a single file which summarizes the number of reads across all samples
-// This is only run after all of the samples are done processing through the
-// 'total_counts' channel, which is transformed by the .collect() command into
-// a single list containing all of the data from all samples.
-process countReadsSummary {
-    tag "Summarize the number of reads per sample"
-    container "${container__fastatools}"
-    // The output from this process will be copied to the --output_folder specified by the user
-    publishDir "${params.output_folder}/qc/", mode: 'copy'
-    errorStrategy "finish"
-
-    input:
-    // Because the input channel has been collected into a single list, this process will only be run once
-    file readcount_csv_list
-
-    output:
-    file "readcounts.csv"
-
-
-"""
-set -e
-
-echo specimen,n_reads > readcounts.csv
-cat ${readcount_csv_list} >> readcounts.csv
-"""
-}
-
-
 // Process which will concatenate a set of files
 process concatenateFiles {
     tag "Directly combine a group of files"

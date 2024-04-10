@@ -28,6 +28,9 @@ workflow Metaphlan2_wf {
             Join_metaphlan2.out
         )
     
+    emit:
+        anndata = MetaphlanLongToAnndata.out
+        long_format = Join_metaphlan2.out
 }
 
     
@@ -36,7 +39,7 @@ process Metaphlan2_paired {
     container "${container__metaphlan2}"
     label = 'multithread'
     errorStrategy 'ignore'
-    publishDir path: "${params.output_folder}MetaPhlAn2/by_specimen/", mode: "copy"
+    publishDir path: "${params.output}MetaPhlAn2/by_specimen/", mode: "copy"
 
     input:
     tuple val(specimen), path(R1), path(R2)
@@ -60,7 +63,7 @@ process Metaphlan2_unpaired {
     label = 'multithread'
     errorStrategy 'ignore'
 
-    publishDir path: "${params.output_folder}MetaPhlAn2/by_specimen/", mode: "copy"
+    publishDir path: "${params.output}MetaPhlAn2/by_specimen/", mode: "copy"
 
     input:
     tuple val(specimen), path(R1)

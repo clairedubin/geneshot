@@ -4,7 +4,6 @@
 nextflow.enable.dsl=2
 // Default parameters
 // Assembly options
-params.gene_fasta = false
 params.phred_offset = 33 // spades
 
 // Default values for boolean flags
@@ -22,7 +21,7 @@ if (!params.output.endsWith("/")){
 }
 
 // Containers
-container__assembler = "quay.io/biocontainers/megahit:1.2.9--h8b12597_0"
+container__assembler = "quay.io/biocontainers/megahit:1.2.9--h43eeafb_5"
 container__anndata = "golob/python-anndata:0.9.2"
 container__prodigal = 'quay.io/biocontainers/prodigal:2.6.3--h516909a_2'
 container__fastatools = "quay.io/fhcrc-microbiome/fastatools:0.7.1__bcw.0.3.2"
