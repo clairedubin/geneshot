@@ -106,7 +106,6 @@ process MergeFastqToFasta {
     touch ${sample_name}.fasta
     cat out.extendedFrags.fastq | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
     cat out.notCombined_1.fastq | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
-    cat out.notCombined_2.fastq | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
     gzip ${sample_name}.fasta
     """
 
