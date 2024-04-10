@@ -6,6 +6,7 @@ nextflow.enable.dsl=2
 container__FAMLI = 'golob/famli2:2.0.0.pre'
 container__anndata = 'golob/python-anndata:0.9.2'
 container__diamond = 'quay.io/biocontainers/diamond:2.1.8--h43eeafb_0'
+container__ubuntu = "ubuntu:22.04"
 container__vsearch = 'quay.io/biocontainers/vsearch:2.22.1--hf1761c0_0'
 container__flash = 'golob/flash:1.2.11'
 
@@ -30,13 +31,13 @@ workflow Alignment_wf {
 
     main:
 
-    MergeFastqToFasta(
+    FastqToFastaPE(
         reads_ch
     )
 
     // Align all specimens against the DIAMOND database
     Diamond(
-        MergeFastqToFasta.out[0],
+        FastqToFastaPE.out,
         allele_dmnd,
     )
 
@@ -82,9 +83,9 @@ process DiamondDB {
 }
 
 // Merge read pairs and convert to fasta:
-process MergeFastqToFasta {
-    tag "Merge fastq files into fasta for alignment"
-    container "${container__flash}"
+process FastqToFastaPE {
+    tag "Fastq to Fasta for alignment in Diamond. Also handle paired end reads"
+    container "${container__ubuntu}"
     label 'io_limited'
     errorStrategy 'ignore'
 
@@ -93,19 +94,12 @@ process MergeFastqToFasta {
 
     output:
         tuple val(sample_name), file("${sample_name}.fasta.gz")
-        file("${sample_name}.flash.log")
     
     """
     set -e
-    flash \
-        ${R1} ${R2} \
-        -t ${task.cpus} \
-        --min-overlap=2 \
-        --max-overlap=65 \
-        2>&1 | tee ${sample_name}.flash.log
     touch ${sample_name}.fasta
-    cat out.extendedFrags.fastq | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
-    cat out.notCombined_1.fastq | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
+    gunzip -c ${R1} | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
+    gunzip -c ${R1} | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
     gzip ${sample_name}.fasta
     """
 
