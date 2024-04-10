@@ -98,19 +98,6 @@ def helpMessage() {
       --gencode             Genetic code used for conceptual translation (default: 11) (DIAMOND)
       --sd_mean_cutoff      Ratio of standard deviation / mean depth of sequencing used to filter genes (default: 3.0) (FAMLI)
 
-    For Annotation:
-      --noannot             If specified, disable annotation for taxonomy or function.
-                            Individual annotations can also be disabled by, e.g., setting --eggnog_db false
-      --taxonomic_dmnd      Database used for taxonomic annotation (default: false)
-                            (Data available at s3://fh-ctr-public-reference-data/tool_specific_data/geneshot/2020-01-15-geneshot/DB.refseq.tax.dmnd)
-      --ncbi_taxdump        Reference describing the NCBI Taxonomy
-                            (default: ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz)
-      --eggnog_dmnd         One of two databases used for functional annotation with eggNOG (default: false)
-                            (Data available at s3://fh-ctr-public-reference-data/tool_specific_data/geneshot/2020-06-17-eggNOG-v5.0/eggnog_proteins.dmnd)
-      --eggnog_db           One of two databases used for functional annotation with eggNOG (default: false)
-                            (Data available at s3://fh-ctr-public-reference-data/tool_specific_data/geneshot/2020-06-17-eggNOG-v5.0/eggnog.db)
-    
-
     Batchfile:
       The manifest is a CSV with a header indicating which samples correspond to which files.
       The file must contain a column `specimen`. This can be repeated. 
