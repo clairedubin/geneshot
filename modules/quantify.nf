@@ -33,8 +33,6 @@ workflow Alignment_wf {
         reads_ch
     )
 
-    MergeFastqToFasta.out.view()
-
     // Align all specimens against the DIAMOND database
     Diamond(
         MergeFastqToFasta.out,
