@@ -255,14 +255,14 @@ workflow {
         Allele_catalog.out.alleles,
         Allele_catalog.out.allele_info
     )
-    
+
     // ##################################
     // # ALIGNMENT-BASED QUANTIFICATION #
     // ##################################
 
     Alignment_wf(
-        Allele_clustering.out.centroids_C100,
-        Allele_clustering.out.dmdb_C100,
+        Allele_catalog.out.alleles,
+        Allele_catalog.out.alleles_dmdb,
         combined_reads_pe,
     )
     Alignment_wf.out.specimen_allele_quant

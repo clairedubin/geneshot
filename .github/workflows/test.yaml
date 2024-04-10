@@ -30,6 +30,19 @@ jobs:
           [[ -s output/qc/manifest.qc.csv ]]
           [[ -s output/qc/Mock__11.R1.fastq.gz ]]
           [[ -s output/qc/Mock__13__R1.noadapt.nohuman.fq.gz ]]
+          [[ -s output/MetaPhlAn2/metaphlan2.results.csv.gz ]]
+          [[ -s output/MetaPhlAn2/metaphlan2.species.h5ad ]]
+          [[ -s output/alleles/allele_info.csv.gz ]]
+          [[ -s output/alleles/alleles.faa.gz ]]
+          [[ -s output/alleles/alleles.faa.gz.dmnd ]]
+          [[ -s output/alleles/Allele_Cluster_info.csv.gz ]]
+          [[ -s output/alleles/centroids.C100.fastp.gz ]]
+          [[ -s output/alleles/centroids.C90.fastp.gz ]]
+          [[ -s output/alleles/centroids.C50.fastp.gz ]]
+          [[ -s output/alleles/centroids.C100.fastp.gz.dmnd ]]
+          [[ -s output/alleles/centroids.C90.fastp.gz.dmnd ]]
+          [[ -s output/alleles/centroids.C50.fastp.gz.dmnd ]]
+          [[ -s output/quantify/specimen_allele_quantity.h5ad ]]                      
 
   preproccessing:
     runs-on: ubuntu-22.04
