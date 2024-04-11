@@ -23,8 +23,8 @@ if (!params.output.endsWith("/")){
 // Containers
 container__assembler = "quay.io/biocontainers/megahit:1.2.9--h43eeafb_5"
 container__anndata = "golob/python-anndata:0.9.2"
-container__prodigal = 'quay.io/biocontainers/prodigal:2.6.3--h516909a_2'
-container__fastatools = "quay.io/fhcrc-microbiome/fastatools:0.7.1__bcw.0.3.2"
+container__prodigal = 'quay.io/biocontainers/prodigal:2.6.3--h031d066_8'
+container__fastatools = "golob/fastatools:0.9"
 
 include { DiamondDB as DiamondIndex_Alleles } from "./quantify" addParams(
     output_folder: params.output_folder
