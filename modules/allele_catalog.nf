@@ -176,46 +176,48 @@ from collections import defaultdict
 import fastalite
 import csv
 
-# First load in the per_specimen_allele -> contig
-sp_allele_csvs = "${specimen_allele_csvs.join(';;')}".split(';;')
-specimen_allele_info = {}
-for sac in sp_allele_csvs:
-    sac_r = csv.DictReader(gzip.open(sac, 'rt'))
-    specimen_allele_info.update({
-        r['gene_name']: {
-            'specimen_allele': r['gene_name'],
-            'specimen': r['specimen'],
-            'contig': r['contig'],
-            'strand': r['strand'],
-            'start': r['start'],
-            'stop': r['stop'],
-        } 
-        for r in sac_r
-    })
-specimens = "${specimens.join(';;')}".split(';;')
+# First load in all the alleles to create 'centroids' and all IDs associated
 allele_faas = "${faas.join(';;')}".split(';;')
-
 centroid_allele = defaultdict(set)
-
 for faa in allele_faas:
     for sr in fastalite.fastalite(gzip.open(faa, 'rt')):
         centroid_allele[sr.seq].add(sr.id)
 
 # Great, now rename and output alleles into fasta format
+# and create a 'specimen_allele' to 'allele' linkage.
+specimen_allele = {}
 with gzip.open("alleles.faa.gz", 'wt') as allele_h:
     for centroid_n, (centroid_seq, seq_ids) in enumerate(centroid_allele.items()):
         centroid_id = "allele___{:010X}".format(centroid_n+1)
-        for sID in seq_ids:
-            specimen_allele_info[sID]['allele'] = centroid_id
+        specimen_allele.update({
+            sID: centroid_id
+            for sID in seq_ids 
+        })
         allele_h.write(">{}\\n{}\\n".format(
             centroid_id,
             centroid_seq
         ))
 
+# Now concatenate together all of the contig info into one file
+sp_allele_csvs = "${specimen_allele_csvs.join(';;')}".split(';;')        
 with gzip.open("allele_info.csv.gz", 'wt') as allele_info_h:
     allele_w = csv.DictWriter(allele_info_h, fieldnames=['allele', 'specimen_allele', 'specimen', 'contig', 'strand', 'start', 'stop'])
     allele_w.writeheader()
-    allele_w.writerows(specimen_allele_info.values())
+    for sac in sp_allele_csvs:
+        sac_r = csv.DictReader(gzip.open(sac, 'rt'))
+        sac_data = [
+            {
+                'allele': specimen_allele.get(r['gene_name']),
+                'specimen_allele': r['gene_name'],
+                'specimen': r['specimen'],
+                'contig': r['contig'],
+                'strand': r['strand'],
+                'start': r['start'],
+                'stop': r['stop'],
+            } 
+            for r in sac_r
+        ]
+        allele_w.writerows(sac_data)
 """
 }
 
