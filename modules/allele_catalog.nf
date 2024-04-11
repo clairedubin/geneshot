@@ -155,7 +155,7 @@ gzip ${specimen}.fna
 process DereplicateAlleles {
     tag "Dereplicate and output *alleles*"
     container "${container__fastatools}"
-    label 'mem_medium'
+    label 'mem_veryhigh'
     errorStrategy 'finish'
     
     input:
