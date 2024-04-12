@@ -286,7 +286,7 @@ workflow {
 
     Alignment_wf(
         alleles,
-        alleles_dmdb,
+        alleles_dmnd,
         combined_reads_pe,
     )
     Alignment_wf.out.specimen_allele_quant
