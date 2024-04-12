@@ -271,15 +271,15 @@ workflow {
         alleles_dmnd = Allele_catalog.out.alleles_dmdb
     } else if (params.clustering == 'U100') {
         alleles = Allele_clustering.out.centroids_C100
-        alleles_dmnd = Allele_catalog.out.dmdb_C100
+        alleles_dmnd = Allele_clustering.out.dmdb_C100
 
     } else if (params.clustering == 'U90') {
         alleles = Allele_clustering.out.centroids_C90
-        alleles_dmnd = Allele_catalog.out.dmdb_C90
+        alleles_dmnd = Allele_clustering.out.dmdb_C90
 
     } else if (params.clustering == 'U50') {
         alleles = Allele_clustering.out.centroids_C50
-        alleles_dmnd = Allele_catalog.out.dmdb_C50
+        alleles_dmnd = Allele_clustering.out.dmdb_C50
 
     }
 
