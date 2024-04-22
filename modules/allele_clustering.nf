@@ -112,7 +112,7 @@ workflow Allele_clustering {
 process SummarizeAllelesAndClusters {
     tag "Summarize all of the avaliable alleles and output"
     container "${container__anndata}"
-    label 'mem_medium'
+    label 'mem_veryhigh'
     errorStrategy 'finish'
     publishDir "${params.output_folder}/alleles/", mode: "copy"
     
@@ -134,24 +134,28 @@ process SummarizeAllelesAndClusters {
 """
 #!/usr/bin/env python3
 import pandas as pd
+import csv
+import gzip
+
 a_i = pd.read_csv('${Alleles_csv}')
-A_c100 = {
-    r.allele: r.C100
-    for i, r in 
-    pd.read_csv('${C100_tsv}', delimiter='\\t', names=['C100', 'allele']).iterrows()
-}
+
+with gzip.open('${C100_tsv}', 'rt') as C100_h:
+    A_c100 = {
+        r[1]: r[0]
+        for r in csv.reader(C100_h, delimiter='\\t')
+    }
 a_i['C100'] = a_i.allele.apply(A_c100.get)
-c100_c90 = {
-    r.C100: r.C90
-    for i, r in 
-    pd.read_csv('${C90_tsv}', delimiter='\\t', names=['C90', 'C100']).iterrows()
-}
+with gzip.open('${C90_tsv}', 'rt') as C90_h:
+    c100_c90 = {
+        r[1]: r[0]
+        for r in csv.reader(C90_h, delimiter='\\t')
+    }
 a_i['C90'] = a_i.C100.apply(c100_c90.get)
-c90_c50 = {
-    r.C90: r.C50
-    for i, r in 
-    pd.read_csv('${C50_tsv}', delimiter='\\t', names=['C50', 'C90']).iterrows()
-}
+with gzip.open('${C50_tsv}', 'rt') as C50_h:
+    c90_c50 = {
+        r[1]: r[0]
+        for r in csv.reader(C50_h, delimiter='\\t')
+    }
 a_i['C50'] = a_i.C90.apply(c90_c50.get)
 a_i.to_csv(
     "Allele_Cluster_info.csv.gz",
