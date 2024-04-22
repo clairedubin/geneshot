@@ -25,6 +25,7 @@ params.manifest = null
 // Flow control
 params.nopreprocess = false
 params.nocomposition = false
+params.clustering = 'U90'
 
 // Preprocessing options
 params.host_index_url = 'https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna.bwa_index.tar.gz'
@@ -76,6 +77,11 @@ def helpMessage() {
     Flow control options:
       --nopreprocess        If specified, omit the preprocessing steps (removing adapters and human sequences). Assume manifest is QCed
       --nocompostion        If specified, will skip the metaphlan2 compositional analysis steps.
+      --clustering          How should the alleles be clustered for quantification?
+                            'D': Dereplication (100% ID and 100% coverage)
+                            'U100': Clustering at 100% ID and 80% Coverage
+                            'U90': Clustering at 90% ID and 80% Coverage (default)
+                            'U50': Clustering at 50% ID and 80% Coverage
 
     Options:
       --output              Folder to place analysis outputs (default ./results)
@@ -113,6 +119,19 @@ if (params.help || params.manifest == null){
     // Invoke the function above which prints the help message
     helpMessage()
     // Exit out and do not run anything else
+    exit 0
+}
+
+valid_clustering = [
+    'D',
+    'U100',
+    'U90', 
+    'U50',
+]
+
+if (!valid_clustering.contains(params.clustering)) {
+    log.error('Please select a valid clustering value: D, U100, U90, U50');
+    helpMessage()
     exit 0
 }
 
@@ -247,9 +266,27 @@ workflow {
     // # ALIGNMENT-BASED QUANTIFICATION #
     // ##################################
 
+    if (params.clustering == 'D') {
+        alleles = Allele_catalog.out.alleles
+        alleles_dmnd = Allele_catalog.out.alleles_dmdb
+    } else if (params.clustering == 'U100') {
+        alleles = Allele_clustering.out.centroids_C100
+        alleles_dmnd = Allele_clustering.out.dmdb_C100
+
+    } else if (params.clustering == 'U90') {
+        alleles = Allele_clustering.out.centroids_C90
+        alleles_dmnd = Allele_clustering.out.dmdb_C90
+
+    } else if (params.clustering == 'U50') {
+        alleles = Allele_clustering.out.centroids_C50
+        alleles_dmnd = Allele_clustering.out.dmdb_C50
+
+    }
+
+
     Alignment_wf(
-        Allele_catalog.out.alleles,
-        Allele_catalog.out.alleles_dmdb,
+        alleles,
+        alleles_dmnd,
         combined_reads_pe,
     )
     Alignment_wf.out.specimen_allele_quant
