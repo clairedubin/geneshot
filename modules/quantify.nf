@@ -3,7 +3,7 @@
 nextflow.enable.dsl=2
 
 // containers
-container__FAMLI = 'golob/famli2:2.0.0.pre'
+container__FAMLI = 'golob/famli2:v3.0.1'
 container__anndata = 'golob/python-anndata:0.9.2'
 container__diamond = 'quay.io/biocontainers/diamond:2.1.8--h43eeafb_0'
 container__ubuntu = "ubuntu:22.04"
@@ -14,7 +14,7 @@ container__flash = 'golob/flash:1.2.11'
 
 
 // Alignment options
-params.dmnd_min_identity = 99 // DIAMOND
+params.dmnd_min_identity = 90 // DIAMOND
 params.dmnd_min_coverage = 80 // DIAMOND
 params.dmnd_top_pct = 1 // DIAMOND
 params.dmnd_min_score = 20 // DIAMOND
@@ -160,7 +160,7 @@ process Famli {
 
     """
     set -e
-    famli2 \
+    famli3 \
       --input ${input_aln} \
       --output ${sample_name}.json \
       --threads ${task.cpus} \
