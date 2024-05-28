@@ -14,7 +14,7 @@ container__flash = 'golob/flash:1.2.11'
 
 
 // Alignment options
-params.dmnd_min_identity = 90 // DIAMOND
+params.dmnd_min_identity = 99 // DIAMOND
 params.dmnd_min_coverage = 80 // DIAMOND
 params.dmnd_top_pct = 1 // DIAMOND
 params.dmnd_min_score = 20 // DIAMOND
@@ -408,7 +408,7 @@ def helpMessage() {
     Required Arguments:
       --manifest            CSV file listing samples (see below)
       --allele_fasta        Compressed FASTA with pre-generated catalog of microbial alleles (faa.gz).
-      --allele_dmmd         (Optional) Diamond database for alleles (if not provided, will be generated)
+      --allele_dmnd         (Optional) Diamond database for alleles (if not provided, will be generated)
 
 
     Options:
