@@ -5,22 +5,21 @@ profiles{
             withLabel: 'io_limited' {
                 cpus = 2
                 memory = 4.GB
-                maxRetries = 3
             }
             withLabel: 'io_net' {
                 cpus = 2
                 memory = 4.GB
-                maxRetries = 3
+
             }            
             withLabel: 'mem_medium' {
                 cpus = 4
-                memory = 30.GB
-                maxRetries = 3
+                memory = 32.GB
+
             }
             withLabel: 'mem_veryhigh' {
-                cpus = 16
-                memory = 120.GB
-                maxRetries = 3
+                cpus = 8
+                memory = {task.attempt > 1 ? 128.GB : 64.GB }
+
             }
         }
     }
@@ -40,7 +39,7 @@ profiles{
             }
             withLabel: 'mem_veryhigh' {
                 cpus = 1
-                memory = 6.GB
+                memory = {task.attempt > 1 ? 16.GB : 8.GB }
             }
         }
     }

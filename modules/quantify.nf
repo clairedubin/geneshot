@@ -110,7 +110,8 @@ process Diamond {
     tag "Align to the gene catalog"
     container "${container__diamond}"
     label 'mem_veryhigh'
-    errorStrategy 'ignore'
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
+    maxRetries 1
     
     input:
     tuple val(sample_name), file(R_fasta)
@@ -150,7 +151,8 @@ process Famli {
     container "${container__FAMLI}"
     label 'mem_veryhigh'
     publishDir "${params.output_folder}/quantify/per_specimen_json/", mode: "copy"
-    errorStrategy 'finish'
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
+    maxRetries 1
     
     input:
     tuple val(sample_name), file(input_aln)
