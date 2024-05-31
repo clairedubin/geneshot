@@ -110,7 +110,7 @@ process Diamond {
     tag "Align to the gene catalog"
     container "${container__diamond}"
     label 'mem_veryhigh'
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= maxRetries ? 'retry' : 'ignore' }
     maxRetries 1
     
     input:
