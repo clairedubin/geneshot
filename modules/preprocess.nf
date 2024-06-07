@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 // Container versions
 container__barcodecop = "golob/barcodecop:0.5.1"
 container__trimgalore = 'quay.io/biocontainers/trim-galore:0.6.6--0'
-container__bwa = "quay.io/fhcrc-microbiome/bwa:bwa.0.7.17__bcw.0.3.0I"
+container__bwa = "quay.io/biocontainers/bwa:0.7.18--he4a0461_0"
 container__fastatools = "quay.io/fhcrc-microbiome/fastatools:0.7.1__bcw.0.3.2"
 container__ubuntu = "ubuntu:18.04"
 
