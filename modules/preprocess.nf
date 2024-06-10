@@ -250,13 +250,13 @@ process Remove_Host {
         tuple val(sample_name), path(alignment_sam_f)
         
     output:
-        tuple val(sample_name), file("R1.${sample_name}.noadapt.nohost.fq.gz"), file("R2.${sample_name}.noadapt.nohost.fq.gz")
+        tuple val(sample_name), file("${sample_name}.noadapt.nohost.R1.fq.gz"), file("${sample_name}.noadapt.nohost.R2.fq.gz")
 
 """
 echo Extracting Unaligned Pairs | tee -a ${sample_name}.nohuman.log
 samtools fastq ${alignment_sam_f} \
 --threads ${task.cpus} -f 12 \
--1 R1.${sample_name}.noadapt.nohost.fq.gz -2 R2.${sample_name}.noadapt.nohost.fq.gz \
+-1 ${sample_name}.noadapt.nohost.R1.fq.gz -2 ${sample_name}.noadapt.nohost.R2.fq.gz \
 | tee -a ${sample_name}.nohuman.log
 echo Done | tee -a ${sample_name}.nohuman.log
 """

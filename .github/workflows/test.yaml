@@ -29,7 +29,7 @@ jobs:
           tree output/
           [[ -s output/qc/manifest.qc.csv ]]
           [[ -s output/qc/Mock__11.R1.fastq.gz ]]
-          [[ -s output/qc/Mock__13__R1.noadapt.nohuman.fq.gz ]]
+          [[ -s output/qc/Mock__13.noadapt.nohost.R1.fq.gz ]]
           [[ -s output/MetaPhlAn2/metaphlan2.results.csv.gz ]]
           [[ -s output/MetaPhlAn2/metaphlan2.species.h5ad ]]
           [[ -s output/alleles/allele_info.csv.gz ]]
@@ -69,7 +69,7 @@ jobs:
           tree output/
           [[ -s output/qc/manifest.qc.csv ]]
           [[ -s output/qc/Mock__11.R1.fastq.gz ]]
-          [[ -s output/qc/Mock__13__R1.noadapt.nohuman.fq.gz ]]
+          [[ -s output/qc/Mock__13.noadapt.nohost.R1.fq.gz ]]
 
   composition_metaphlan2:
     runs-on: ubuntu-22.04
