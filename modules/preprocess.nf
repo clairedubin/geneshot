@@ -4,7 +4,8 @@ nextflow.enable.dsl=2
 container__barcodecop = "golob/barcodecop:0.5.1"
 container__trimgalore = 'quay.io/biocontainers/trim-galore:0.6.6--0'
 container__bwa = "quay.io/biocontainers/bwa:0.7.18--he4a0461_0"
-container__fastatools = "quay.io/fhcrc-microbiome/fastatools:0.7.1__bcw.0.3.2"
+container_samtools = "quay.io/biocontainers/samtools:1.20--h50ea8bc_0"
+container__fastatools = "golob/fastatools:0.9"
 container__ubuntu = "ubuntu:18.04"
 
 // Function to filter a manifest to those rows which 
@@ -93,11 +94,12 @@ workflow Preprocess_wf {
         host_index_tgz = file(params.host_index)
     }
 
-    // Remove the human reads
-    BWA_remove_human(host_index_tgz, TrimGalore.out)
+    // Remove the host reads
+    BWA_find_host(host_index_tgz, TrimGalore.out)
+    Remove_Host(BWA_find_host.out)
 
     // Combine the reads by specimen name
-    CombineReads(BWA_remove_human.out.groupTuple())
+    CombineReads(Remove_Host.out.groupTuple())
 
     // If the user specified --savereads, write out the manifest
     if (params.savereads) {
@@ -196,10 +198,10 @@ wget --quiet ${params.host_index_url} -O host_index.tar.gz
 
 
 // Process to remove human reads
-process BWA_remove_human {
-    tag "Remove human reads"
+process BWA_find_host {
+    tag "Find host reads"
     container "${container__bwa}"
-    errorStrategy 'ignore'
+    errorStrategy 'finish'
     label 'multithread'
 
 
@@ -208,7 +210,7 @@ process BWA_remove_human {
         tuple val(sample_name), file(R1), file(R2)
 
     output:
-        tuple val(sample_name), file("${R1.getSimpleName()}.noadapt.nohuman.fq.gz"), file("${R2.getSimpleName()}.noadapt.nohuman.fq.gz")
+        tuple val(sample_name), path("${sample_name}.alignment.sam")
 
 
 """
@@ -220,28 +222,45 @@ bwa_index_prefix=\${bwa_index_fn%.*}
 echo BWA index prefix is \${bwa_index_prefix} | tee -a ${R1.getSimpleName()}.nohuman.log
 echo Extracting BWA index | tee -a ${R1.getSimpleName()}.nohuman.log
 mkdir -p host_index/ 
-tar -I pigz -xf ${host_index_tgz} -C host_index/ | tee -a ${R1.getSimpleName()}.nohuman.log
+tar -xzf ${host_index_tgz} -C host_index/ | tee -a ${R1.getSimpleName()}.nohuman.log
 echo Files in index directory: | tee -a ${R1.getSimpleName()}.nohuman.log
 ls -l -h host_index | tee -a ${R1.getSimpleName()}.nohuman.log
 echo Running BWA | tee -a ${R1.getSimpleName()}.nohuman.log
 bwa mem -t ${task.cpus} \
 -T ${params.min_host_align_score} \
--o alignment.sam \
+-o ${sample_name}.alignment.sam \
 host_index/\$bwa_index_prefix \
 ${R1} ${R2} \
 | tee -a ${R1.getSimpleName()}.nohuman.log
 echo Checking if alignment is empty  | tee -a ${R1.getSimpleName()}.nohuman.log
-[[ -s alignment.sam ]]
-echo Extracting Unaligned Pairs | tee -a ${R1.getSimpleName()}.nohuman.log
-samtools fastq alignment.sam \
---threads ${task.cpus} -f 12 \
--1 ${R1.getSimpleName()}.noadapt.nohuman.fq.gz -2 ${R2.getSimpleName()}.noadapt.nohuman.fq.gz \
-| tee -a ${R1.getSimpleName()}.nohuman.log
-echo Done | tee -a ${R1.getSimpleName()}.nohuman.log
+[[ -s ${sample_name}.alignment.sam ]]
 
 rm -rf host_index/*
 echo Cleanup Done
 """
+}
+
+process Remove_Host {
+    tag "Remove host reads"
+    container "${container_samtools}"
+    errorStrategy 'finish'
+    label 'mulithread'
+
+    input:
+        tuple val(sample_name), path(alignment_sam_f)
+        
+    output:
+        tuple val(sample_name), file("R1.${sample_name}.noadapt.nohost.fq.gz"), file("R2.${sample_name}.noadapt.nohost.fq.gz")
+
+"""
+echo Extracting Unaligned Pairs | tee -a ${sample_name}.nohuman.log
+samtools fastq ${alignment_sam_f} \
+--threads ${task.cpus} -f 12 \
+-1 R1.${sample_name}.noadapt.nohost.fq.gz -2 R2.${sample_name}.noadapt.nohost.fq.gz \
+| tee -a ${sample_name}.nohuman.log
+echo Done | tee -a ${sample_name}.nohuman.log
+"""
+
 }
 
 process JoinFASTQ {
