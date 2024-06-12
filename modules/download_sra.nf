@@ -11,7 +11,7 @@ params.list = false
 params.output = '.'
 params.help = false
 
-container__downloadsra = 'golob/downloadsra:v0.99.0'
+container__downloadsra = 'golob/downloadsra:v0.99.1'
 
 // Function which prints help message text
 def helpMessage() {
