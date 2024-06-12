@@ -11,6 +11,8 @@ params.list = false
 params.output = '.'
 params.help = false
 
+container__downloadsra = 'golob/downloadsra:v0.99.0'
+
 // Function which prints help message text
 def helpMessage() {
     log.info"""
@@ -123,7 +125,7 @@ workflow {
 
 // Get the accession for each Run in this BioProject
 process getSRAlist {
-    container "quay.io/fhcrc-microbiome/integrate-metagenomic-assemblies:v0.5"
+    container "${container__downloadsra}"
     label "io_net"
     errorStrategy 'finish'
     
@@ -223,7 +225,7 @@ with open("accession_list.txt", "wt") as fo:
 
 // Get the UID for an SRR
 process getSRRuid {
-    container "quay.io/fhcrc-microbiome/integrate-metagenomic-assemblies:v0.5"
+    container "${container__downloadsra}"
     label "io_net"
     errorStrategy 'ignore'
     
@@ -290,7 +292,7 @@ print(SRR_id.strip())
 
 // Get the metadata for a single SRA accession
 process getMetadata {
-    container "quay.io/fhcrc-microbiome/integrate-metagenomic-assemblies:v0.5"
+    container "${container__downloadsra}"
     label "io_net"
     errorStrategy 'ignore'
     
@@ -428,7 +430,7 @@ with gzip.open("%s.metadata.json.gz" % sra_accession, "wt") as fo:
 
 // Collect the metadata from all accessions
 process joinMetadata {
-    container "quay.io/fhcrc-microbiome/integrate-metagenomic-assemblies:v0.5"
+    container "${container__downloadsra}"
     label "mem_medium"
     errorStrategy 'ignore'
     
@@ -472,7 +474,7 @@ metadata_df.to_csv("${params.accession}.metadata.csv", index=None)
 
 // Download the .sra file for each SRR accession
 process downloadSRA {
-    container "quay.io/fhcrc-microbiome/integrate-metagenomic-assemblies:v0.5"
+    container "${container__downloadsra}"
     label "io_net"
     errorStrategy 'ignore'
     
@@ -540,7 +542,7 @@ process extractSRA {
 
 
 process gatherReadnames {
-    container "quay.io/fhcrc-microbiome/integrate-metagenomic-assemblies:v0.5"
+    container "${container__downloadsra}"
     label "io_limited"
     errorStrategy 'finish'
     publishDir "${output_folder}", mode: "copy", overwrite: "true"
