@@ -61,7 +61,7 @@ workflow Alignment_wf {
 process DiamondDB {
     tag "Make a DIAMOND database"
     container "${container__diamond}"
-    label 'mem_veryhigh'
+    label 'mid_memory'
     errorStrategy 'finish'
     publishDir "${params.output_folder}/alleles/", mode: "copy"
     
@@ -98,8 +98,12 @@ process FastqToFastaPE {
     """
     set -e
     touch ${sample_name}.fasta
-    gunzip -c ${R1} | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
-    gunzip -c ${R1} | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
+    #gunzip -c ${R1} | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
+    #gunzip -c ${R1} | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2));} else if(NR%4==2) print;}' >> ${sample_name}.fasta
+    
+    gunzip -c ${R1} | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2)"_R1");} else if(NR%4==2) print;}' >> ${sample_name}.fasta
+    gunzip -c ${R2} | awk '{if(NR%4==1) {printf(">%s\\n",substr(\$0,2)"_R2");} else if(NR%4==2) print;}' >> ${sample_name}.fasta
+
     gzip ${sample_name}.fasta
     """
 
@@ -109,7 +113,7 @@ process FastqToFastaPE {
 process Diamond {
     tag "Align to the gene catalog"
     container "${container__diamond}"
-    label 'mem_veryhigh'
+    label 'mid_memory'
     errorStrategy { task.attempt <= maxRetries ? 'retry' : 'ignore' }
     maxRetries 1
     
@@ -149,7 +153,7 @@ process Diamond {
 process Famli {
     tag "Deduplicate multi-mapping reads"
     container "${container__FAMLI}"
-    label 'mem_veryhigh'
+    label 'mem_veryveryhigh'
     publishDir "${params.output_folder}/quantify/per_specimen_json/", mode: "copy"
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 1
